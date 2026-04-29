@@ -1,5 +1,9 @@
 # CHANGELOG
 
+# 0.0.53
+* Added PostgreSQL to PostgreSQL Discovery Pipeline template `dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl`.
+* Added PostgreSQL to PostgreSQL Masking Pipeline template `dcsazure_PostgreSQL_to_PostgreSQL_mask_pl`.
+
 # 0.0.52
 * Added Cassandra to Cassandra Discovery Pipeline template `dcsazure_Cassandra_to_Cassandra_discovery_pl`.
 * Added Cassandra to Cassandra Masking Pipeline template `dcsazure_Cassandra_to_Cassandra_mask_pl`.
