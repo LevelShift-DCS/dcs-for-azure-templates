@@ -24,6 +24,7 @@
 -- * V2026.02.18.0__update_adf_event_log_table
 -- * V2026.02.25.0__add_cosmosnosql_adf_type_mapping
 -- * V2026.03.13.0__add_cassandra_adf_type_mapping
+-- * V2026.04.29.0__add_postgresql_adf_type_mapping
 -- The contents of each of those files follows
 
 
@@ -4549,5 +4550,14 @@ VALUES (
     'String',
     'string'
 );
+GO
+
+
+-- source: V2026.04.29.0__add_postgresql_adf_type_mapping
+-- Insert type mapping
+INSERT INTO adf_type_mapping
+(dataset, dataset_type, adf_type)
+VALUES
+('POSTGRESQL', 'String', 'string');
 GO
 

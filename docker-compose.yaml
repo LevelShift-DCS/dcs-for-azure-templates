@@ -95,10 +95,22 @@ services:
              cp VERSION.md dcsazure_Cassandra_to_Cassandra_mask_pl/VERSION.md &&
              zip dcsazure_Cassandra_to_Cassandra_mask_pl.zip dcsazure_Cassandra_to_Cassandra_mask_pl/ADLS_to_Cassandra/* dcsazure_Cassandra_to_Cassandra_mask_pl/* ADLS_to_Cassandra.zip &&
 
+             zip -j PostgreSQL_to_ADLS.zip dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl/PostgreSQL_to_ADLS/function_app.py dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl/PostgreSQL_to_ADLS/host.json dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl/PostgreSQL_to_ADLS/requirements.txt &&
+             cp LICENSE dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl/LICENSE &&
+             cp VERSION.md dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl/VERSION.md &&
+             zip dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl.zip dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl/PostgreSQL_to_ADLS/* dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl/* PostgreSQL_to_ADLS.zip &&
+
+             zip -j ADLS_to_PostgreSQL.zip dcsazure_PostgreSQL_to_PostgreSQL_mask_pl/ADLS_to_PostgreSQL/function_app.py dcsazure_PostgreSQL_to_PostgreSQL_mask_pl/ADLS_to_PostgreSQL/host.json dcsazure_PostgreSQL_to_PostgreSQL_mask_pl/ADLS_to_PostgreSQL/requirements.txt &&
+             cp LICENSE dcsazure_PostgreSQL_to_PostgreSQL_mask_pl/LICENSE &&
+             cp VERSION.md dcsazure_PostgreSQL_to_PostgreSQL_mask_pl/VERSION.md &&
+             zip dcsazure_PostgreSQL_to_PostgreSQL_mask_pl.zip dcsazure_PostgreSQL_to_PostgreSQL_mask_pl/ADLS_to_PostgreSQL/* dcsazure_PostgreSQL_to_PostgreSQL_mask_pl/* ADLS_to_PostgreSQL.zip &&
+
              rm *_pl/LICENSE &&
              rm *_pl/VERSION.md &&
              rm Cosmos_to_ADLS.zip &&
              rm ADLS_to_Cosmos.zip &&
+             rm PostgreSQL_to_ADLS.zip &&
+             rm ADLS_to_PostgreSQL.zip &&
              rm Cassandra_to_ADLS.zip &&
              rm ADLS_to_Cassandra.zip &&
              mv *.zip releases/."
