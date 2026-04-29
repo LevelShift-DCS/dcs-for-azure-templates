@@ -36,7 +36,7 @@ NON_TEMPLATES_DIR = [
     DOCUMENTATION_PATH, METADATA_STORE_PATH, "releases", "scripts", ".github",
 ]
 
-ALLOWED_SYSTEMS = {"Cosmos", "Cassandra", "ADLS"}
+ALLOWED_SYSTEMS = {"Cosmos", "Cassandra", "ADLS", "PostgreSQL"}
 
 FUNCTION_DIR_REGEX = re.compile(
 rf"^({'|'.join(ALLOWED_SYSTEMS)})_to_({'|'.join(ALLOWED_SYSTEMS)})$"

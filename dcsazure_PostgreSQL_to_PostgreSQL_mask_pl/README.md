@@ -1,0 +1,178 @@
+# dcsazure_PostgreSQL_to_PostgreSQL_mask_pl
+## Delphix Compliance Services (DCS) for Azure - PostgreSQL to PostgreSQL Masking Pipeline
+
+This pipeline will perform masking of your PostgreSQL DB data.
+
+### Prerequisites
+
+1. Configure the hosted metadata database and associated Azure SQL linked service (version `V2026.04.29.0`).
+1. Configure the DCS for Azure REST linked service.
+1. Configure the Azure Data Lake Storage linked service associated with your ADLS source data.
+1. Configure the Azure Data Lake Storage linked service associated with your ADLS sink data.
+1. [Assign a managed identity with a Storage Blob Data Contributor role for the Data Factory instance within the storage account](External_document_link).
+1. [Create an Azure Function app for loading masked ADLS data into PostgreSQL DB](External_document_link) (version `ADLS_to_PostgreSQL_V1`).
+1. [Configure an Azure Key Vault for storing the ADLS access key and assign a managed identity with the Key Vault Secrets User role to the Azure Function](External_document_link).
+1. [Configure an Azure Key Vault for storing the PostgreSQL DB access key and assign a managed identity with the Key Vault Secrets User role to the Azure Function](External_document_link).
+1. [Deploy the Azure Function to the Function App created in the previous step](./ADLS_to_PostgreSQL/AzureFunctionDeployment.md).
+1. [Configure the Azure Function Linked service](External_document_link).
+
+### Importing
+There are several linked services that will need to be selected in order to perform the masking of your PostgreSQL data.
+
+These linked service types are needed for the following steps:
+
+`Azure Function` (ADLS to PostgreSQL) - Linked service associated with loading masked ADLS data into PostgreSQL. This will be used for the following steps:
+* Check If We Should Copy Data To PostgreSQL (If Condition activity)
+
+`Azure Data Lake Storage Gen2` (Source) - Linked service associated with the ADLS account used for staging source PostgreSQL DB data. This will be used for the following steps:
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_filter_test_utility_df/Source (dataFlow),
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_unfiltered_mask_df/Source (dataFlow),
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_container_and_directory_mask_ds (DelimitedText dataset),
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_copy_df/Source (dataFlow)
+
+`Azure Data Lake Storage Gen2` (Sink) - Linked service associated with the ADLS account used for staging sink PostgreSQL DB data. This will be used for the following steps:
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_filter_test_utility_df/Sink (dataFlow),
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_container_and_directory_mask_ds (DelimitedText dataset),
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_unfiltered_mask_df/Sink (dataFlow),
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_copy_df/Sink (dataFlow)
+
+`Azure SQL` (metadata) - Linked service associated with your hosted metadata store. This will be used for the following steps:
+* Check ADLS To PostgreSQL Status (If Condition activity),
+* Update Logs If Copy Data To ADLS Is True (If Condition activity),
+* Update Masked State No Filter (Stored procedure activity),
+* Update Masked State No Filter Failed (Stored procedure activity),
+* If Copy Via Dataflow (If Condition activity),
+* If Copy Via Dataflow (If Condition activity),
+* If Copy Via Dataflow (If Condition activity),
+* If Copy Via Dataflow (If Condition activity),
+* Check If We Should Reapply Mapping (If Condition activity),
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_metadata_mask_ds (Azure SQL Database dataset)
+
+`REST` (DCS for Azure) - Linked service associated with calling DCS for Azure. This will be used for the following steps:
+* dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_unfiltered_mask_df (dataFlow)
+
+### How It Works
+
+* Execute ADLS Masking Pipeline
+  * Check If We Should Reapply Mapping
+    * If we should, Mark Table Mapping Incomplete. This is done by updating the metadata store to indicate that tables have not had their mapping applied.
+  * Select Directories We Should Purge
+    * Select sink directories with an incomplete mapping and based on the value of `P_TRUNCATE_SINK_BEFORE_WRITE`, create a list of directories that should be purged.
+      * For Each Directory To Purge:
+        * Check For Files
+        * If the directory exists, purge the sink directory.
+  * Select Tables Without Required Masking. This is done by querying the metadata store.
+    * Filter If Copy Unmasked Enabled. This is done by applying a filter based on the value of `P_COPY_UNMASKED_TABLES`.
+      * For Each Table With No Masking. Provided we have rows left after applying the filter:
+        * If Copy Via Dataflow - based on the value of `P_COPY_USE_DATAFLOW`
+          * If the data flow is to be used for copy then call `dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_copy_df`.
+            * Update the mapped status based on the success of this dataflow, and fail accordingly.
+          * If the data flow is not to be used for copy, then use a copy activity.
+            * Update the mapped status based on the success of this activity, and fail accordingly.
+  * Select Tables That Require Masking. This is done by querying the metadata store.
+    * Configure Masked Status. Set the masked status based on the defined filters that need to be applied for the table to be marked as completely mapped.
+    * For Each Table To Mask
+      * Check if the table must be masked with a filter condition.
+        * If no filter needs to be applied:
+          * Call the `dcsazure_PostgreSQL_to_PostgreSQL_ADLS_delimited_unfiltered_mask_df` data flow, passing in parameters as generated by the Lookup Masking Parameters activity.
+          * Update the mapped status based on the success of this dataflow, and fail accordingly.
+        * If a filter is used:
+          * Fail the pipeline with the message `Conditional Masking is not supported`.
+  * There is a deactivated activity Test Filter Condition that exists to support importing the filter test utility dataflow for filter-condition validation during debug sessions.
+* Check If We Should Copy Data To PostgreSQL
+  * Copy ADLS Data To PostgreSQL
+    * Load masked ADLS data into the PostgreSQL target table using an Azure Function.
+* Until ADLS To PostgreSQL Durable Function Is Success
+  * Poll the Azure Function execution status until the load completes.
+* Check ADLS To PostgreSQL Status
+  * Validate that the load completed successfully, otherwise fail the pipeline.
+* Delete Masked Staging Data
+  * If `P_DELETE_STAGING_AFTER_LOAD` is true, purge masked sink staging data after successful load.
+
+### Variables
+
+If you have configured your database using the metadata store scripts, these variables will not need editing. If you
+have customized your metadata store, then these variables may need editing.
+
+* `METADATA_SCHEMA` - Schema used for storing metadata (default `dbo`)
+* `METADATA_RULESET_TABLE` - Table used for storing discovered rulesets (default `discovered_ruleset`)
+* `METADATA_SOURCE_TO_SINK_MAPPING_TABLE` - Table defining source-to-sink mappings (default `adf_data_mapping`)
+* `METADATA_ADF_TYPE_MAPPING_TABLE` - Table mapping dataset data types to ADF data types (default `adf_type_mapping`)
+* `TARGET_BATCH_SIZE` - Target number of rows per batch during masking (default `50000`)
+* `DATASET` - Dataset identifier used in the metadata store (default `POSTGRESQL`)
+* `METADATA_EVENT_PROCEDURE_NAME` - Stored procedure used to capture masking execution events and update masking state (default `insert_adf_masking_event`)
+* `METADATA_MASKING_PARAMS_PROCEDURE_NAME` - Stored procedure used to generate masking parameters (default `generate_masking_parameters`)
+* `COLUMN_WIDTH_ESTIMATE` - Estimated column width used for batch size calculation when schema width is unavailable (default `1000`)
+* `STORAGE_ACCOUNT` - Azure Data Lake Storage account name used for staging masked data (default `DCS_PLACEHOLDER`)
+* `ADLS_TO_POSTGRESQL_BATCH_SIZE` - Number of rows per batch while copying data from ADLS to PostgreSQL (default `100000`)
+* `POSTGRESQL_KEY_VAULT_NAME` - Name of the Azure Key Vault that stores the PostgreSQL DB access key (default `DCS_PLACEHOLDER`)
+* `POSTGRESQL_SECRET_NAME` - Name of the secret in Key Vault containing the PostgreSQL DB access key (default `DCS_PLACEHOLDER`)
+* `ADLS_SECRET_NAME` - Name of the secret in Key Vault containing the ADLS access key (default `DCS_PLACEHOLDER`)
+* `POSTGRESQL_SSL_MODE` - SSL mode used for PostgreSQL connection (default `require`)
+
+### Parameters
+
+* `P_POSTGRESQL_SINK_HOST` - String - Target PostgreSQL server hostname or endpoint
+* `P_POSTGRESQL_SINK_PORT` - Integer - Target PostgreSQL server port
+* `P_POSTGRESQL_SINK_USERNAME` - String - Username used to connect to the target PostgreSQL server
+* `P_POSTGRESQL_SOURCE_DATABASE` - String - Source PostgreSQL database name
+* `P_POSTGRESQL_SINK_DATABASE` - String - Target PostgreSQL database name for masked data
+* `P_POSTGRESQL_SOURCE_SCHEMA` - String - Source PostgreSQL schema name
+* `P_POSTGRESQL_SINK_SCHEMA` - String - Target PostgreSQL schema name
+* `P_POSTGRESQL_TABLE` - String - PostgreSQL table name
+* `P_ADLS_SOURCE_CONTAINER` - String - ADLS filesystem/container for unmasked staged data
+* `P_ADLS_SINK_CONTAINER` - String - ADLS filesystem/container for masked staged data
+* `P_COPY_UNMASKED_TABLES` - Bool - Copy data even when no masking rules are defined (default `true`)
+* `P_COPY_USE_DATAFLOW` - Bool - Use dataflow instead of copy activity when copying data (default `false`)
+* `P_FAIL_ON_NONCONFORMANT_DATA` - Bool - Fail pipeline if non-conformant data is encountered (default `true`)
+* `P_TRUNCATE_SINK_BEFORE_WRITE` - Bool - Truncate target sink directory before writing masked data (default `true`)
+* `P_REAPPLY_MAPPING` - Bool - Reapply source-to-sink mapping before masking (default `true`)
+* `P_COPY_ADLS_DATA_TO_POSTGRESQL` - Bool - Specifies whether masked data should be copied from ADLS to PostgreSQL (default `true`)
+* `P_DELETE_STAGING_AFTER_LOAD` - Bool - Specifies whether masked sink staging data should be deleted after load (default `false`)
+
+### Notes
+
+* When creating the Azure Function used for ADLS to PostgreSQL load, choose the hosting plan based on data volume:
+  * The default timeout for the Consumption plan is 10 minutes.
+  * The default timeout for the Flex Consumption plan is 60 minutes.
+  * For very large loads, it is recommended to use an App Service plan with at least 4 GB of memory.
+* If the Azure Function fails with out-of-memory errors (exit code 137), adjust the `ADLS_TO_POSTGRESQL_BATCH_SIZE` to reduce memory pressure.
+* Update `POSTGRESQL_KEY_VAULT_NAME`, `POSTGRESQL_SECRET_NAME`, and `ADLS_SECRET_NAME` variables to match your target environment before triggering the pipeline.
+* The `source_metadata` column in the `discovered_ruleset` table can be used to determine which filtered data is currently staged in ADLS prior to running the masking pipeline. For example:
+  ```sql
+  SELECT
+      d.dataset,
+      d.specified_database,
+      d.specified_schema,
+      d.identified_table,
+      d.identified_column,
+      pv.value AS partition_value
+  FROM <METADATA_SCHEMA>.<METADATA_RULESET_TABLE> d
+  CROSS APPLY OPENJSON(d.source_metadata, '$.partition_values') pv
+  WHERE d.dataset = 'POSTGRESQL'
+    AND d.specified_schema LIKE 'POSTGRESQL-DATABASE/POSTGRESQL-SCHEMA-NAME/POSTGRESQL-TABLE-NAME%';
+  ```
+* The PostgreSQL table name must be the same in both source and sink contexts for the masking pipeline to function correctly.
+* Ensure all required schemas/tables are added to the `adf_data_mapping` table before triggering the masking pipeline.
+* If a column exists in some records but is missing in others, the pipeline still includes that column in masked output, populating `null` where it was not originally present.
+* Conditional masking is not supported by this template.
+
+### Limitations and Workarounds
+
+* **Array of strings masking**
+  * When a PostgreSQL DB document contains an array of primitive string values (for example, an array of email addresses), the discovery and masking pipeline treats the entire array as a single string value.
+  * Applying a string-based masking algorithm (such as `dlpx-core:Email Unique`) results in a single masked string, causing the original array structure and data type to be lost.
+
+* **Reason for the limitation**
+  * Arrays of primitive values do not contain explicit keys and are indexed only by position.
+  * During flattening to a delimited format, there is no reliable way to map positional array elements to distinct columns.
+  * As a result, individual array elements cannot be independently discovered or masked using standard DCS templates.
+
+* **Workaround**
+  * When masking arrays of strings, use an algorithm that preserves the overall structure of the value.
+  * The built-in `dlpx-core:CM Alpha-Numeric` algorithm can be used to mask array elements without relying on schema-aware decomposition.
+  * Alternatively, a custom masking algorithm can be created using a regex-based approach to decompose the array and apply masking to individual elements while preserving the array format.
+  * Regex-based decomposition requires an upper bound on the expected number of elements in the array, as capture groups must be defined in advance.
+  * If the array contains fewer elements than expected, empty capture groups may cause the algorithm to fail.
+  * If the array contains more elements than defined capture groups, additional values may not be masked and the algorithm may fall back or fail.
+  * This workaround is suitable only when the maximum number of elements in the array is known and bounded.

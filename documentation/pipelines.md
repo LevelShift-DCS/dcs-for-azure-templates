@@ -24,5 +24,7 @@ This document provides an overview and links to the README files for various Azu
 - [dcsazure_Cosmos_NoSQL_to_Cosmos_NoSQL_mask_pl](../dcsazure_Cosmos_NoSQL_to_Cosmos_NoSQL_mask_pl/README.md): Cosmos NoSQL to Cosmos NoSQL Masking Pipeline
 - [dcsazure_Cassandra_to_Cassandra_discovery_pl](../dcsazure_Cassandra_to_Cassandra_discovery_pl/README.md): Cassandra to Cassandra Discovery Pipeline
 - [dcsazure_Cassandra_to_Cassandra_mask_pl](../dcsazure_Cassandra_to_Cassandra_mask_pl/README.md): Cassandra to Cassandra Masking Pipeline
+- [dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl](../dcsazure_PostgreSQL_to_PostgreSQL_discovery_pl/README.md): PostgreSQL to PostgreSQL Discovery Pipeline
+- [dcsazure_PostgreSQL_to_PostgreSQL_mask_pl](../dcsazure_PostgreSQL_to_PostgreSQL_mask_pl/README.md): PostgreSQL to PostgreSQL Masking Pipeline
 
 Please refer to the respective README files for detailed information on each pipeline.
