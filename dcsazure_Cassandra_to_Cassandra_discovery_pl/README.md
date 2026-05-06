@@ -19,14 +19,6 @@ your Cassandra containers.
 
 These linked services types are needed for the following steps:
 
-`Azure Data Lake Storage Gen2` (staging) - Linked service associated with the ADLS account used for staging Cassandra DB exports. This will be used for the following steps:
-* dcsazure_Cassandra_to_Cassandra_ADLS_delimited_container_and_directory_discovery_ds (DelimitedText dataset),
-* dcsazure_Cassandra_to_Cassandra_ADLS_delimited_data_discovery_df/SourceData1MillRowDataSampling (dataFlow),
-* dcsazure_Cassandra_to_Cassandra_ADLS_delimited_header_file_schema_discovery_ds (DelimitedText dataset)
-
-`Azure Function` (Cassandra to ADLS) - Linked service associated with exporting Cassandra DB data to ADLS. This will be used for the following steps:
-* Check If We Should Copy Cassandra to ADLS (If Condition activity)
-
 `Azure SQL` (metadata) - Linked service associated with your hosted metadata store. This will be used for the following
 steps:
 * Set Source Metadata (Script activity),
@@ -39,6 +31,14 @@ steps:
 * dcsazure_Cassandra_to_Cassandra_data_discovery_df/MetadataStoreRead (dataFlow)
 * dcsazure_Cassandra_to_Cassandra_data_discovery_df/WriteToMetadataStore (dataFlow)
 * Persist Metadata To Database (Stored procedure activity)
+
+`Azure Function` (Cassandra to ADLS) - Linked service associated with exporting Cassandra DB data to ADLS. This will be used for the following steps:
+* Check If We Should Copy Cassandra to ADLS (If Condition activity)
+
+`Azure Data Lake Storage Gen2` (staging) - Linked service associated with the ADLS account used for staging Cassandra DB exports. This will be used for the following steps:
+* dcsazure_Cassandra_to_Cassandra_ADLS_delimited_container_and_directory_discovery_ds (DelimitedText dataset),
+* dcsazure_Cassandra_to_Cassandra_ADLS_delimited_data_discovery_df/SourceData1MillRowDataSampling (dataFlow),
+* dcsazure_Cassandra_to_Cassandra_ADLS_delimited_header_file_schema_discovery_ds (DelimitedText dataset)
 
 `REST` (DCS for Azure) - Linked service associated with calling DCS for Azure. This will be used for the following steps:
 * dcsazure_Cassandra_to_Cassandra_ADLS_delimited_data_discovery_df (dataFlow)

@@ -313,7 +313,7 @@
               },
               "ifTrueActivities": [
                 {
-                  "name": "ADLS_to_Cassandra",
+                  "name": "ADLS to Cassandra",
                   "type": "AzureFunctionActivity",
                   "dependsOn": [],
                   "policy": {
@@ -773,7 +773,8 @@
             "type": "String"
           },
           "ADLS_TO_CASSANDRA_BATCH_SIZE": {
-            "type": "Integer"
+            "type": "Integer",
+            "defaultValue": 50000
           },
           "CASSANDRA_USERNAME": {
             "type": "String"
@@ -783,7 +784,7 @@
           "name": "dcsazure_Cassandra_to_Cassandra"
         },
         "annotations": [],
-        "lastPublishTime": "2026-04-24T10:50:45Z"
+        "lastPublishTime": "2026-05-05T11:55:01Z"
       },
       "dependsOn": [
         "[concat(variables('factoryId'), '/pipelines/dcsazure_Cassandra_to_Cassandra_ADLS_delimited_mask_pl')]",
@@ -2721,9 +2722,6 @@
           "P_DATASET": {
             "type": "string"
           },
-          "P_CONDITIONAL_MASKING_RESERVED_CHARACTER": {
-            "type": "string"
-          },
           "P_METADATA_EVENT_PROCEDURE_NAME": {
             "type": "string"
           },
@@ -2738,7 +2736,7 @@
           "name": "dcsazure_Cassandra_to_Cassandra"
         },
         "annotations": [],
-        "lastPublishTime": "2026-04-24T10:37:25Z"
+        "lastPublishTime": "2026-05-05T11:55:00Z"
       },
       "dependsOn": [
         "[concat(variables('factoryId'), '/datasets/dcsazure_Cassandra_to_Cassandra_ADLS_delimited_metadata_mask_ds')]",
