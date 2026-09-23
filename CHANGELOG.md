@@ -1,5 +1,9 @@
 # CHANGELOG
 
+# 0.0.53
+* Added Spanner to Spanner Discovery Pipeline template `dcsazure_Spanner_to_Spanner_discovery_pl`.
+* Added Spanner to Spanner Masking Pipeline template `dcsazure_Spanner_to_Spanner_mask_pl`.
+
 # 0.0.52
 * Added Cassandra to Cassandra Discovery Pipeline template `dcsazure_Cassandra_to_Cassandra_discovery_pl`.
 * Added Cassandra to Cassandra Masking Pipeline template `dcsazure_Cassandra_to_Cassandra_mask_pl`.
